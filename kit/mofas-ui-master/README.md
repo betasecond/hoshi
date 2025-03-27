@@ -72,69 +72,6 @@ npm test
 
 访问：http://localhost:3000
 
-## 开发指南
-
-### 创建新路由
-
-假设要添加一个 /about 页面：
-
-#### 1. 在 routes 目录下创建 about.ts：
-
-```typescript
-import express, { Request, Response, NextFunction } from 'express';
-const router = express.Router();
-
-router.get('/', (req: Request, res: Response, next: NextFunction) => {
-  res.render('about', { title: '关于我们' });
-});
-
-export default router;
-```
-
-#### 2. 在 app.ts 中注册路由：
-
-```typescript
-import aboutRouter from './routes/about';
-app.use('/about', aboutRouter);
-```
-
-### 创建模型
-
-示例用户模型：
-
-```typescript
-// models/user.ts
-interface IUser {
-  id: number;
-  name: string;
-  email: string;
-}
-
-class User implements IUser {
-  constructor(
-    public id: number,
-    public name: string,
-    public email: string
-  ) {}
-  
-  getFullName(): string {
-    return this.name;
-  }
-}
-
-export default User;
-```
-
-在路由中使用：
-
-```typescript
-import User from '../models/user';
-
-router.get('/profile', (req: Request, res: Response) => {
-  const user = new User(1, '张三', 'zhangsan@example.com');
-  res.render('profile', { title: '用户资料', user });
-});
-```
 
 ## 测试
 
@@ -159,11 +96,6 @@ describe('GET /', () => {
 
 本项目采用以下编程范式：
 
-#### 中间件模式  
-
-- Express 的灵魂，所有的请求处理都通过中间件堆叠完成。比如 Morgan 记录日志，Cookie-parser 解析 Cookie。
-- 新人练习：写一个中间件检查用户是否登录。
-
 #### MVC 架构  
 
 - 模型（Models）：数据和逻辑，比如 user.ts。
@@ -177,21 +109,13 @@ describe('GET /', () => {
 
 #### 测试驱动开发（TDD）  
 
-- 先写测试（期望结果），再写代码实现。新人可以从简单功能开始尝试。
+- 先写测试（期望结果），再写代码实现。
 
 ## 常见问题
-
-TypeScript 相关：
-- 类型错误：确保正确导入类型定义
-- 编译失败：检查 tsconfig.json 配置
-- 运行时错误：确保所有依赖都有对应的 @types 包
 
 - 启动失败  
   - 检查端口：netstat -aon | findstr :3000（Windows）或 lsof -i :3000（Linux）。
   - 检查依赖：npm list 查看是否有错误。
-- 模板渲染错误  
-  - Pug 语法对缩进敏感，确保对齐正确。
-  - 检查变量名是否拼写错误。
 - 路由未响应  
   - 路由顺序重要，app.use() 的顺序决定匹配优先级。
   - 检查路径是否多写或少写了斜杠 /。
@@ -234,15 +158,3 @@ gantt
     系统集成完成 :milestone, 2025-03-29, 0d
     项目交付 :milestone, 2025-03-30, 0d
 ```
-
-------
-
-## 新人建议
-
-1. 熟悉 TypeScript 基础语法和类型系统
-2. 了解 tsconfig.json 配置
-3. 掌握如何使用类型定义文件（.d.ts）
-4. 使用 VS Code 等支持 TypeScript 的 IDE
-5. 启用 TypeScript 的严格模式，培养良好的类型习惯
-
-通过这个项目，你将学会使用 TypeScript 开发 Express.js 应用，欢迎提问！
