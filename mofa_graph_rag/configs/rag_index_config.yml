@@ -1,0 +1,25 @@
+# Configuration for the RAG Indexing Operator (Step 1)
+RAG_INDEX:
+  # --- Input ---
+  # Pattern to find context files in the input directory from Step 0
+  INPUT_CONTEXTS_FILENAME_PATTERN: "*_unique_contexts.json"
+
+  # --- RAG Core Settings ---
+  WORKING_DIR: "../rag_index_storage"  # Relative path for LightRAG data (index, cache, etc.)
+
+  # --- LLM Settings (for potential internal RAG use, check lightrag specifics) ---
+  LLM_API_KEY: "sk-your_api_key_here"           # Use env variable or secrets management in production
+  LLM_BASE_URL: "https://dashscope.aliyuncs.com/compatible-mode/v1" # Or your OpenAI endpoint
+  LLM_MODEL_NAME: "qwen-turbo"                # Model used by LightRAG (if needed beyond embedding)
+
+  # --- Embedding Settings ---
+  EMBEDDING_API_KEY: "sk-your_api_key_here"       # Often same as LLM key
+  EMBEDDING_BASE_URL: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+  EMBEDDING_MODEL_NAME: "text-embedding-v2"     # Embedding model
+  EMBEDDING_DIM: 1536                           # Dimension of the embedding model (e.g., 1536 for text-embedding-v2)
+  EMBEDDING_MAX_TOKEN_SIZE: 8191                # Max tokens for embedding model (check model docs, e.g., 8191 for v2)
+  EMBEDDING_BATCH_NUM: 10                       # How many texts to embed in one API call
+
+  # --- Insertion Settings ---
+  INSERT_MAX_RETRIES: 3                         # Number of retries for inserting a batch of contexts
+  INSERT_RETRY_DELAY: 10                        # Delay in seconds between insertion retries
