@@ -1,110 +1,100 @@
 # dataflow.yml
 # Defines the data flow for the LightRAG processing pipeline using MoFA/DORA.
+# Starts with interactive terminal input.
 
 nodes:
   # --------------------------------------------------------------------------
-  # Node 1: Start Trigger (Optional, but good for initiating the flow)
+  # Node 1: Terminal Input (Initiates the pipeline)
   # --------------------------------------------------------------------------
-  # This node sends an initial message to kick off the pipeline.
-  # We use dora-timer to send one message immediately upon starting.
-  - id: start-trigger
-    # Assumes 'dora-timer' node is available in the environment or path
-    # You might need to install/build it if it's a separate package.
-    # If not available, you could replace this with a simple python node
-    # that sends one output message.
-    operator:
-       python: dora-timer # Example: Using a standard timer node
-       config:
-         tick_once: true  # Fire only once at the beginning
+  # Waits for user input in the terminal to start the pipeline.
+  - id: terminal-input
+    # Configuration provided by the user.
+    # IMPORTANT: Ensure the 'build' path is correct relative to where you run 'dora start'.
+    #            The path '../../node-hub/terminal-input' might need adjustment.
+    #            Also, verify if 'path: dynamic' works in your setup or if a specific path is needed.
+    build: pip install -e ../../node-hub/terminal-input # <-- VERIFY THIS PATH
+    path: dynamic                                       # <-- VERIFY THIS PATH/MECHANISM
     outputs:
-      - tick           # Default output ID for dora-timer
+      # Outputs the user's typed input (or just a signal if Enter is pressed)
+      - data
+    # No inputs are needed for this node to simply *start* the pipeline.
+    # The inputs shown in the original user example were likely for displaying
+    # results back to the terminal *after* processing, not for initiation.
+    inputs: {}
 
   # --------------------------------------------------------------------------
   # Node 2: Data Preparation (Step 0 Operator)
   # --------------------------------------------------------------------------
-  # Downloads the dataset and extracts unique contexts.
+  # Downloads the dataset and extracts unique contexts. Triggered by terminal input.
   - id: data-prep
     operator:
-      # Path to the Python script for this operator
       python: scripts/data_prep_operator.py
-      # Inputs: Define what triggers this node and what data it needs.
-      # It just needs a trigger signal to start its work.
-      inputs:
-         # The key here ('trigger') doesn't strictly matter as the operator's
-         # on_event just checks for dora_event["type"] == "INPUT".
-         # We map the timer's output to this input.
-         trigger: start-trigger/tick
-      # Outputs: Define the data this node produces.
-      outputs:
-        # The directory path where unique context JSON files are saved.
-        - unique_contexts_dir
+    # Inputs: Now waits for the 'data' output from the terminal-input node.
+    # The key 'trigger' is arbitrary here; the operator code just checks for any input event.
+    inputs:
+      trigger: terminal-input/data
+    outputs:
+      # The directory path where unique context JSON files are saved.
+      - unique_contexts_dir
 
   # --------------------------------------------------------------------------
   # Node 3: RAG Indexing (Step 1 Operator)
   # --------------------------------------------------------------------------
-  # Builds the LightRAG index using the unique contexts.
+  # Builds the LightRAG index using the unique contexts. Depends on data-prep.
   - id: rag-indexer
     operator:
       python: scripts/rag_index_operator.py
-      # Inputs: Depends on the output of the data preparation step.
-      inputs:
-        # The key 'unique_contexts_dir' must match the expected event_id
-        # in the rag_index_operator.py script's on_event method.
-        unique_contexts_dir: data-prep/unique_contexts_dir
-      # Outputs: The path to the directory containing the initialized RAG index.
-      outputs:
-        - rag_index_dir
+    # Inputs: Depends on the output of the data preparation step.
+    # The key 'unique_contexts_dir' matches the expected event_id in the operator.
+    inputs:
+      unique_contexts_dir: data-prep/unique_contexts_dir
+    outputs:
+      # The path to the directory containing the initialized RAG index.
+      - rag_index_dir
 
   # --------------------------------------------------------------------------
   # Node 4: Question Generation (Step 2 Operator)
   # --------------------------------------------------------------------------
-  # Generates questions based on the unique contexts.
+  # Generates questions based on the unique contexts. Depends on data-prep.
+  # Runs in parallel (logically) with rag-indexer.
   - id: question-generator
     operator:
       python: scripts/question_gen_operator.py
-      # Inputs: Also depends on the output of the data preparation step.
-      # It runs in parallel (logically) with the rag-indexer.
-      inputs:
-        # The key 'unique_contexts_dir' must match the expected event_id
-        # in the question_gen_operator.py script's on_event method.
-        unique_contexts_dir: data-prep/unique_contexts_dir
-      # Outputs: The path to the text file containing generated questions.
-      outputs:
-        - generated_questions_file
+    # Inputs: Also depends on the output of the data preparation step.
+    # The key 'unique_contexts_dir' matches the expected event_id in the operator.
+    inputs:
+      unique_contexts_dir: data-prep/unique_contexts_dir
+    outputs:
+      # The path to the text file containing generated questions.
+      - generated_questions_file
 
   # --------------------------------------------------------------------------
   # Node 5: RAG Querying (Step 3 Operator)
   # --------------------------------------------------------------------------
-  # Queries the RAG index using the generated questions.
+  # Queries the RAG index using the generated questions. Depends on indexer and generator.
   - id: rag-querier
     operator:
       python: scripts/rag_query_operator.py
-      # Inputs: Depends on BOTH the index being ready AND the questions file.
-      # DORA will ensure this node only runs after receiving inputs on *both* keys.
-      inputs:
-        # Key 'rag_index_dir' matches expected event_id in rag_query_operator.py
-        rag_index_dir: rag-indexer/rag_index_dir
-        # Key 'generated_questions_file' matches expected event_id in rag_query_operator.py
-        generated_questions_file: question-generator/generated_questions_file
-      # Outputs: A payload containing paths to the results and errors JSON files.
-      outputs:
-        - query_results
+    # Inputs: Depends on BOTH the index being ready AND the questions file.
+    # DORA ensures this node runs only after receiving inputs on *both* keys.
+    inputs:
+      # Key 'rag_index_dir' matches expected event_id in the operator.
+      rag_index_dir: rag-indexer/rag_index_dir
+      # Key 'generated_questions_file' matches expected event_id in the operator.
+      generated_questions_file: question-generator/generated_questions_file
+    outputs:
+      # A payload containing paths to the results and errors JSON files.
+      - query_results
 
   # --------------------------------------------------------------------------
-  # Node 6: Result Logger (Optional Sink Node)
+  # Node 6: Result Logger (Sink Node)
   # --------------------------------------------------------------------------
-  # A simple node to receive and log the final output of the pipeline.
+  # Receives and logs the final output of the pipeline. Uses external script.
   - id: result-logger
     operator:
-        # ---- Changed Section ----
-        # Point to the dedicated Python script for the logger operator
-        python: scripts/result_logger_operator.py
-        # -------------------------
-      # Inputs: Receives the final payload from the RAG querying step.
-      # The input definition remains the same.
+      python: scripts/result_logger_operator.py
+    # Inputs: Receives the final payload from the RAG querying step.
+    # The key 'final_output' is arbitrary for this simple logger.
     inputs:
-        # The key ('final_output') must match the expected event_id if the logger
-        # were to check dora_event["id"] (though this simple one doesn't strictly need to).
-        # We can keep it descriptive.
-        final_output: rag-querier/query_results
-      # No outputs needed for this sink node.
+      final_output: rag-querier/query_results
+    # No outputs needed for this sink node.
