@@ -1,0 +1,20 @@
+# Configuration for the Question Generation Operator (Step 2)
+QUESTION_GEN:
+  # --- Input ---
+  # The specific filename within the unique_contexts_dir to use for generating summaries
+  INPUT_CONTEXTS_FILENAME: "mix_unique_contexts.json" # Adjust if you use a different file or pattern logic
+
+  # --- Summarization ---
+  TOKENIZER_MODEL: "gpt2"           # Model used by Hugging Face Transformers for tokenization in get_summary
+  SUMMARY_TOTAL_TOKENS: 2000        # Target token count for the summary function per context
+  # MIN_TOKENS_FOR_SUMMARY: 50      # Optional: Minimum tokens needed to attempt summary
+
+  # --- LLM Settings ---
+  LLM_API_KEY: "sk-your_api_key_here"           # Use env vars or secrets management
+  LLM_BASE_URL: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+  LLM_MODEL_NAME: "qwen-turbo-0919"              # Or the specific model used in the original script
+  # LLM_MAX_RETRIES: 3              # Optional: Retries for the LLM call
+  # LLM_RETRY_DELAY: 5              # Optional: Delay between LLM retries
+
+  # --- Output ---
+  OUTPUT_QUESTIONS_FILE: "../output/generated_questions.txt" # Relative path to save the generated questions

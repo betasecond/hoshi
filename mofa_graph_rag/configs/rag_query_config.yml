@@ -1,0 +1,24 @@
+# Configuration for the RAG Querying Operator (Step 3)
+RAG_QUERY:
+  # --- RAG Query Settings ---
+  QUERY_MODE: "hybrid"                # RAG query mode (e.g., 'hybrid', 'vector', 'keyword')
+  # QUERY_TOP_K: 5                    # Optional: Number of results to retrieve (if configurable)
+  QUERY_MAX_RETRIES: 2                # Optional: Number of retries per query if it fails
+  QUERY_RETRY_DELAY: 5                # Optional: Delay between query retries (seconds)
+
+
+  # --- LLM Settings (Required by LightRAG init, even when loading index) ---
+  LLM_API_KEY: "sk-your_api_key_here"           # Use env vars or secrets management
+  LLM_BASE_URL: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+  LLM_MODEL_NAME: "qwen-turbo-0919"              # Ensure consistency if used by RAG internals
+
+  # --- Embedding Settings (Required by LightRAG init) ---
+  EMBEDDING_API_KEY: "sk-your_api_key_here"       # Often same as LLM key
+  EMBEDDING_BASE_URL: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+  EMBEDDING_MODEL_NAME: "text-embedding-v2"     # Must match the model used for indexing
+  EMBEDDING_DIM: 1536                           # Must match the model used for indexing
+  EMBEDDING_MAX_TOKEN_SIZE: 8191                # Must match the model used for indexing
+
+  # --- Output ---
+  OUTPUT_RESULTS_FILE: "../output/query_results.json" # Relative path for successful Q&A pairs
+  OUTPUT_ERRORS_FILE: "../output/query_errors.json"   # Relative path for queries that failed
